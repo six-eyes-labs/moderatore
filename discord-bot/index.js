@@ -18,6 +18,7 @@ const { REST } = require("@discordjs/rest");
 const { moderatorAbi, moderatorAddress } = require("./utils/moderatorAbi");
 const { getProvider } = require("./utils/getProvider");
 const { generateFunction, createBulletList } = require("./utils/actions");
+var cors = require("cors");
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API,
@@ -59,6 +60,8 @@ client.login(BOT_TOKEN);
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const expressApp = express();
+expressApp.use(cors());
+
 const provider = getProvider();
 const contract = new ethers.Contract(moderatorAddress, moderatorAbi, provider);
 
@@ -103,7 +106,7 @@ contract.on("RuleRemoved", (event) => {
 
 // server functions
 async function canUserVoteFromEoa(eoa) {
-  const eoaMappingRef = collection(db, "eoamapping");
+  const eoaMappingRef = await collection(db, "eoamapping");
   const que = query(eoaMappingRef, where("userEOA", "==", eoa));
   const querySnapshot = await getDocs(que);
   let docArray = [];
@@ -111,10 +114,11 @@ async function canUserVoteFromEoa(eoa) {
     docArray.push(doc.data());
   });
   if (docArray.length === 0) {
+    console.log("not found");
     return false;
   }
   const userId = docArray[0].discordId;
-  const canVote = isUserHavingVotingRole(userId, GUILD_ID);
+  const canVote = await isUserHavingVotingRole(userId, GUILD_ID);
   return canVote;
 }
 
@@ -142,14 +146,13 @@ async function saveUserIdAndEoa(userId, userEoa) {
 }
 
 // server
-expressApp.get("/api/canUserVoteFromEoa/:eoa", (req, res) => {
+expressApp.get("/api/canUserVoteFromEoa/:eoa", async (req, res) => {
   const eoa = req.params.eoa.toLocaleLowerCase();
   const query = req.query.guildId;
   console.log({ query }); //to be used later
-  canUserVoteFromEoa(eoa).then((response) => {
-    console.log(response, eoa);
-    res.json({ eligible: response ? 1 : 0 });
-  });
+  const response = await canUserVoteFromEoa(eoa);
+  console.log(response, eoa);
+  res.json({ eligible: response ? 1 : 0 });
 });
 
 // bot client functions
