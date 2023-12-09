@@ -6,7 +6,9 @@ import { TrackTxnProvider } from "@/config/TrackTxnProvider";
 import { ModalProvider } from "@/config/ModalProvider";
 import Appbar from "@/components/Appbar";
 import Footer from "@/components/Footer";
+import { ToastContainer } from "react-toastify";
 import "@uiw/react-textarea-code-editor/dist.css";
+import "react-toastify/dist/ReactToastify.css";
 
 const dosis = Dosis({ subsets: ["latin"] });
 
@@ -33,6 +35,18 @@ export default function RootLayout({ children }) {
             </TrackTxnProvider>
           </ReduxProvider>
         </WagmiProvider>
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+        />
       </body>
     </html>
   );
