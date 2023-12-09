@@ -254,9 +254,9 @@ contract Moderatore is IArbitrable, IEvidence {
     uint256 proposalCount = 0;
 
     mapping(string => Server) public Servers;
-    mapping(string => Rule[]) public ServerToRules;
-    mapping(string => uint[]) public ServerToRuleIds;
-    mapping(string => uint[]) public ServerToProposalIds;
+    mapping(string => Rule[]) private ServerToRules;
+    mapping(string => uint[]) private ServerToRuleIds;
+    mapping(string => uint[]) private ServerToProposalIds;
     mapping(string => bool) private doesServerExist;
     mapping(uint256 => Proposal) public ProposalDetails;
     mapping(uint => mapping(address => bool)) public hasVoted;
@@ -576,5 +576,26 @@ contract Moderatore is IArbitrable, IEvidence {
                 break;
             }
         }
+    }
+
+    /**
+     * getters
+     */
+    function getRules(
+        string memory _guildId
+    ) public view returns (Rule[] memory) {
+        return ServerToRules[_guildId];
+    }
+
+    function getRuleIds(
+        string memory _guildId
+    ) public view returns (uint[] memory) {
+        return ServerToRuleIds[_guildId];
+    }
+
+    function getProposalIds(
+        string memory _guildId
+    ) public view returns (uint[] memory) {
+        return ServerToProposalIds[_guildId];
     }
 }

@@ -21,8 +21,9 @@ async function main() {
     ipfsHashMetaEvidenceObj[0]["path"];
   console.log("Meta evidence file hash : ", ipfsFileHash);
 
-  const ruleArbitrator = "0xcADe104D568453AEb7992f68C1447801e43dCc2C";
-  const banArbitrator = "0xcADe104D568453AEb7992f68C1447801e43dCc2C";
+  //same arbitrator for now
+  const ruleArbitrator = "0xC8D58DA74ba01Af17d3936aA62a2a77fc44a4E9f";
+  const banArbitrator = "0xC8D58DA74ba01Af17d3936aA62a2a77fc44a4E9f";
 
   const moderatore = await hre.ethers.deployContract("Moderatore", [
     ruleArbitrator,
