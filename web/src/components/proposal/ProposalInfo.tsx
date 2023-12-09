@@ -8,6 +8,7 @@ import { useAccount, useContractWrite } from "wagmi";
 import { ModalTypes, useModal } from "@/config/ModalProvider";
 import { useTrackTransaction } from "@/config/TrackTxnProvider";
 import { useWeb3Modal } from "@web3modal/wagmi/react";
+import VotePopup from "./VotePopup";
 
 const ProposalInfo = ({ proposal }: { proposal: Proposal }) => {
   const { modalType, openModal, closeModal } = useModal();
@@ -97,7 +98,7 @@ const ProposalInfo = ({ proposal }: { proposal: Proposal }) => {
                   isOpen={modalType === ModalTypes.Vote}
                   onClose={closeModal}
                 >
-                  <div>hi</div>
+                  <VotePopup proposal={proposal} />
                 </Modal>
               )}
             </div>
