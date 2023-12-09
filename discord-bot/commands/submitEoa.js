@@ -9,4 +9,5 @@ const submitEoa = new SlashCommandBuilder()
       .setDescription("set your Ethereum address")
       .setRequired(true)
   );
+
 exports.submitEoa = submitEoa.toJSON();

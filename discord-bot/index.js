@@ -15,7 +15,7 @@ const { REST } = require("@discordjs/rest");
 require("dotenv").config();
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB2_cgJEE8c0Y97WVkZ1s9HlZtuBeM_toM",
+  apiKey: process.env.FIREBASE_API,
   authDomain: "moderator-bot-b3b16.firebaseapp.com",
   projectId: "moderator-bot-b3b16",
   storageBucket: "moderator-bot-b3b16.appspot.com",
@@ -41,6 +41,31 @@ client.login(BOT_TOKEN);
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const expressApp = express();
+
+const getProvider = () => {
+  try {
+    const allRpcs = [defaultRpc, ...fallbackRpcs];
+    const providers = allRpcs.map((rpc) => new ethers.JsonRpcProvider(rpc));
+
+    const network = new ethers.Network("goerli", 5n);
+
+    return new ethers.FallbackProvider(providers, network, {
+      cacheTimeout: 5000,
+      eventQuorum: 2,
+      eventWorkers: 1,
+      pollingInterval: 1000,
+      quorum: 1,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+};
+const defaultRpc = "https://goerli.infura.io/v3/${process.env.INFURA_KEY}";
+const fallbackRpcs = [
+  "https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}",
+  "https://ethereum-goerli.publicnode.com/",
+  "https://rpc.ankr.com/eth_goerli",
+];
 
 // server functions
 async function canUserVoteFromEoa(eoa) {
