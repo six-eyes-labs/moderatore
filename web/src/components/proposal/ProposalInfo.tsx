@@ -9,6 +9,7 @@ import { ModalTypes, useModal } from "@/config/ModalProvider";
 import { useTrackTransaction } from "@/config/TrackTxnProvider";
 import { useWeb3Modal } from "@web3modal/wagmi/react";
 import VotePopup from "./VotePopup";
+import CodeEditorInput from "@uiw/react-textarea-code-editor";
 
 const ProposalInfo = ({ proposal }: { proposal: Proposal }) => {
   const { modalType, openModal, closeModal } = useModal();
@@ -16,7 +17,7 @@ const ProposalInfo = ({ proposal }: { proposal: Proposal }) => {
   const { isConnected } = useAccount();
   const { open: connectWallet } = useWeb3Modal();
 
-  const { write, isLoading: isConfirming } = useContractWrite({
+  const { write, isLoading: isConfirming } = useContractWrite<any>({
     ...modContract,
     functionName: "executeProposal",
     onSuccess(data) {
@@ -26,7 +27,7 @@ const ProposalInfo = ({ proposal }: { proposal: Proposal }) => {
       //close after a delay
       setTimeout(closeModal, 2000);
     },
-  });
+  }) as any;
 
   const status = getStatus(proposal);
 
@@ -72,6 +73,18 @@ const ProposalInfo = ({ proposal }: { proposal: Proposal }) => {
       </div>
 
       <div className="text-lg md:text-xl text-text font-medium py-1">
+        <CodeEditorInput
+          disabled
+          value={proposal.checkFn}
+          language="js"
+          placeholder="Please enter JS code."
+          padding={15}
+          style={{
+            backgroundColor: "#f5f5f5",
+            fontFamily:
+              "ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace",
+          }}
+        />
         {proposal.checkFn}
       </div>
       <div className="text-lg md:text-xl text-text font-medium py-1">

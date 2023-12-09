@@ -6,8 +6,9 @@ import { TrackTxnProvider } from "@/config/TrackTxnProvider";
 import { ModalProvider } from "@/config/ModalProvider";
 import Appbar from "@/components/Appbar";
 import Footer from "@/components/Footer";
-import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
+import "@uiw/react-textarea-code-editor/dist.css";
+import "react-toastify/dist/ReactToastify.css";
 
 const dosis = Dosis({ subsets: ["latin"] });
 
