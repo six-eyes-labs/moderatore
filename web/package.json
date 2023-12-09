@@ -9,9 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@web3modal/wagmi": "^3.4.0",
+    "encoding": "^0.1.13",
+    "lokijs": "^1.5.12",
+    "next": "14.0.4",
+    "pino-pretty": "^10.2.3",
     "react": "^18",
     "react-dom": "^18",
-    "next": "14.0.4"
+    "viem": "^1.19.11",
+    "wagmi": "^1.4.10"
   },
   "devDependencies": {
     "autoprefixer": "^10.0.1",
