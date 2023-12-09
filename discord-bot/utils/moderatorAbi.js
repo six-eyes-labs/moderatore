@@ -580,7 +580,7 @@ const moderatorAbi = [
   },
 ];
 
-const moderatorAddress = "0x9CbE58D49712D681D1f2d86398A0d4f29137879D";
+const moderatorAddress = "0x42434a6BBC0c418bF1663d7BDC756E6D7C59b774";
 
 exports.moderatorAbi = moderatorAbi;
 exports.moderatorAddress = moderatorAddress;
