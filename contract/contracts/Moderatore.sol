@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
+import {FunctionsClient} from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/FunctionsClient.sol";
+import {FunctionsRequest} from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/libraries/FunctionsRequest.sol";
+
 /**
  * @title IArbitrable
  * Arbitrable interface.
@@ -186,12 +189,18 @@ interface IEvidence {
     );
 }
 
-contract Moderatore is IArbitrable, IEvidence {
+contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
+    using FunctionsRequest for FunctionsRequest.Request;
+
     address public creator;
     IArbitrator public ruleArbitrator;
     IArbitrator public banArbitrator;
 
     uint256 public constant proposalPeriod = 5 minutes; // time in which smne can vote for a rule to be added , can be set with governane later
+    address router = 0x6E2dc0F9DB014aE19888F539E59285D2Ea04244C;
+    bytes32 donID =
+        0x66756e2d706f6c79676f6e2d6d756d6261692d31000000000000000000000000;
+    uint32 gasLimit = 300000;
 
     enum ProposalStatus {
         Proposed,
@@ -245,6 +254,12 @@ contract Moderatore is IArbitrable, IEvidence {
         bool hasReclaimed;
     }
 
+    struct VoteRequest {
+        address voter;
+        uint proposalId;
+        uint vote;
+    }
+
     uint256 constant numberOfRulingOptions = 2;
     uint256 constant numberOfProposalOptions = 1; // 0 for no ,1 for yes
 
@@ -262,6 +277,7 @@ contract Moderatore is IArbitrable, IEvidence {
     mapping(uint => mapping(address => bool)) public hasVoted;
     mapping(uint => Rule) public RuleDetails;
     mapping(uint => uint) DisputeToRule;
+    mapping(bytes32 => VoteRequest) public VoteRequests;
 
     error InvalidStatus();
     error NotArbitrator();
@@ -269,6 +285,25 @@ contract Moderatore is IArbitrable, IEvidence {
     error InsufficientPayment(uint256 _available, uint256 _required);
     error InvalidRuling(uint256 _ruling, uint256 _numberOfChoices);
     error UnexistingDispute();
+    error UnexpectedRequestID(bytes32 requestId);
+    error NotEligibleToVote(address voter, uint proposalId);
+
+    // Event to log responses
+    event VoteRegistered(
+        bytes32 indexed requestId,
+        address voter,
+        uint proposalId,
+        bytes err,
+        bytes response
+    );
+
+    event VoteDeclined(
+        bytes32 indexed requestId,
+        address voter,
+        uint proposalId,
+        bytes err,
+        bytes response
+    );
 
     event RuleAdded(
         uint addedOn,
@@ -290,6 +325,15 @@ contract Moderatore is IArbitrable, IEvidence {
 
     event RuleRemoved(uint indexed removedOn, uint indexed ruleId);
 
+    string source =
+        "const guildId = args[0];"
+        "const userAddress = args[1];"
+        "const apiResponse = await Functions.makeHttpRequest({"
+        "url: `https://39b6-2406-7400-63-96c3-4978-c342-aa38-f5f8.ngrok-free.app/api/canUserVoteFromEoa/${userAddress}/`"
+        "});"
+        "const { eligible } = apiResponse;"
+        "return Functions.encodeUint256(eligible);";
+
     /**
      * @dev Contract constructor.
      * @param _ruleArbitrator The address of the arbitrator contract that rules on Rules removal.
@@ -302,7 +346,7 @@ contract Moderatore is IArbitrable, IEvidence {
         string memory _ruleMetaevidence,
         IArbitrator _banArbitrator,
         string memory _banMetaevidence
-    ) {
+    ) FunctionsClient(router) {
         creator = msg.sender;
         ruleArbitrator = _ruleArbitrator;
         banArbitrator = _banArbitrator;
@@ -359,13 +403,19 @@ contract Moderatore is IArbitrable, IEvidence {
     }
 
     /**
-     * @dev Vote on a proposal.
-     * @param _proposalId The ID of the proposal.
-     * @param _option The voting option (0 for against, 1 for for).
+     * @notice Sends an HTTP request for character information
+     * @param subscriptionId The ID for the Chainlink subscription
+     * @param _proposalId The ID for the proposal to vote on
+     * @param _option The option to vote
+     * @return requestId The ID of the request
      */
-    //add chainlink here
-    function vote(uint256 _proposalId, uint256 _option) public {
-        Proposal storage proposal = ProposalDetails[_proposalId];
+    function vote(
+        uint64 subscriptionId,
+        uint256 _proposalId,
+        uint256 _option,
+        string[] calldata args
+    ) external returns (bytes32 requestId) {
+        Proposal memory proposal = ProposalDetails[_proposalId];
 
         require(_proposalId <= proposalCount, "Invalid proposal id");
         require(
@@ -375,12 +425,78 @@ contract Moderatore is IArbitrable, IEvidence {
         require(hasVoted[_proposalId][msg.sender] != true, "Already Voted");
         require(_option < 2, "Invalid option. Can be either 0 or 1.");
 
-        if (_option == 0) {
+        //prepare request
+        FunctionsRequest.Request memory req;
+        req.initializeRequestForInlineJavaScript(source); // Initialize the request with JS code
+
+        req.setArgs(args); // Set the arguments for the request
+
+        // Send the request and store the request ID
+        bytes32 reqId = _sendRequest(
+            req.encodeCBOR(),
+            subscriptionId,
+            gasLimit,
+            donID
+        );
+
+        VoteRequests[reqId] = VoteRequest({
+            voter: msg.sender,
+            proposalId: _proposalId,
+            vote: _option
+        });
+
+        return reqId;
+    }
+
+    /**
+     * @notice Callback function for fulfilling a request
+     * @param requestId The ID of the request to fulfill
+     * @param response The HTTP response data
+     * @param err Any errors from the Functions request
+     */
+    function fulfillRequest(
+        bytes32 requestId,
+        bytes memory response,
+        bytes memory err
+    ) internal override {
+        VoteRequest memory voteRequest = VoteRequests[requestId];
+
+        if (voteRequest.voter == address(0)) {
+            // revert UnexpectedRequestID(requestId); // Check if request IDs maexisttch
+        }
+
+        uint res = bytesToUint(response);
+
+        //revert if not eligble to vote
+        if (res == uint(0)) {
+            emit VoteDeclined(
+                requestId,
+                voteRequest.voter,
+                voteRequest.proposalId,
+                err,
+                response
+            );
+            // revert NotEligibleToVote(voteRequest.voter, voteRequest.proposalId);
+        }
+
+        Proposal storage proposal = ProposalDetails[voteRequest.proposalId];
+
+        if (voteRequest.vote == 0) {
             proposal.againstVotes++;
         } else {
             proposal.forVotes++;
         }
-        hasVoted[_proposalId][msg.sender] = true;
+
+        hasVoted[voteRequest.proposalId][msg.sender] = true;
+
+        // Emit an event to log the response
+        emit VoteRegistered(
+            requestId,
+            voteRequest.voter,
+            voteRequest.proposalId,
+            err,
+            response
+        );
     }
 
     /**
@@ -439,31 +555,31 @@ contract Moderatore is IArbitrable, IEvidence {
         );
     }
 
-    /**
-     * @dev Reclaim the arbitration fee if the proposal is not approved.
-     * @param _proposalId The ID of the proposal.
-     */
-    function reclaimFee(uint _proposalId) public {
-        Proposal storage proposal = ProposalDetails[_proposalId];
-        require(
-            block.timestamp > proposal.proposedOn + proposalPeriod,
-            "Proposal still active"
-        );
-        require(
-            proposal.proposedBy == msg.sender,
-            "Only proposer can reclaim."
-        );
-        require(
-            proposal.forVotes <= proposal.againstVotes,
-            "Proposal approved. Please execute"
-        );
-        require(!proposal.hasReclaimed, "Already reclaimed fee");
+    // /**
+    //  * @dev Reclaim the arbitration fee if the proposal is not approved.
+    //  * @param _proposalId The ID of the proposal.
+    //  */
+    // function reclaimFee(uint _proposalId) public {
+    //     Proposal storage proposal = ProposalDetails[_proposalId];
+    //     require(
+    //         block.timestamp > proposal.proposedOn + proposalPeriod,
+    //         "Proposal still active"
+    //     );
+    //     require(
+    //         proposal.proposedBy == msg.sender,
+    //         "Only proposer can reclaim."
+    //     );
+    //     require(
+    //         proposal.forVotes <= proposal.againstVotes,
+    //         "Proposal approved. Please execute"
+    //     );
+    //     require(!proposal.hasReclaimed, "Already reclaimed fee");
 
-        uint256 requiredCost = ruleArbitrator.arbitrationCost("");
+    //     uint256 requiredCost = ruleArbitrator.arbitrationCost("");
 
-        proposal.proposedBy.transfer(requiredCost);
-        proposal.hasReclaimed = true;
-    }
+    //     proposal.proposedBy.transfer(requiredCost);
+    //     proposal.hasReclaimed = true;
+    // }
 
     /**
      * @dev Oppose a rule.
@@ -583,19 +699,31 @@ contract Moderatore is IArbitrable, IEvidence {
      */
     function getRules(
         string memory _guildId
-    ) public view returns (Rule[] memory) {
+    ) public view returns (Rule[] memory rules) {
         return ServerToRules[_guildId];
     }
 
     function getRuleIds(
         string memory _guildId
-    ) public view returns (uint[] memory) {
+    ) public view returns (uint[] memory ruleIds) {
         return ServerToRuleIds[_guildId];
     }
 
     function getProposalIds(
         string memory _guildId
-    ) public view returns (uint[] memory) {
+    ) public view returns (uint[] memory proposalIds) {
         return ServerToProposalIds[_guildId];
+    }
+
+    //helpers
+    function bytesToUint(bytes memory b) public pure returns (uint256) {
+        uint256 number;
+        for (uint i = 0; i < b.length; i++) {
+            number =
+                number +
+                uint(uint8(b[i])) *
+                (2 ** (8 * (b.length - (i + 1))));
+        }
+        return number;
     }
 }
