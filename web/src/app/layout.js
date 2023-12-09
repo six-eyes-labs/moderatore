@@ -2,6 +2,8 @@ import { Dosis } from "next/font/google";
 import "./globals.css";
 import { WagmiProvider } from "@/config/WagmiProvider";
 import { ReduxProvider } from "@/store/provider";
+import { TrackTxnProvider } from "@/config/TrackTxnProvider";
+import { ModalProvider } from "@/config/ModalProvider";
 
 const dosis = Dosis({ subsets: ["latin"] });
 
@@ -15,7 +17,11 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={dosis.className}>
         <WagmiProvider>
-          <ReduxProvider>{children}</ReduxProvider>
+          <ReduxProvider>
+            <TrackTxnProvider>
+              <ModalProvider>{children}</ModalProvider>
+            </TrackTxnProvider>
+          </ReduxProvider>
         </WagmiProvider>
       </body>
     </html>
