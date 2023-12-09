@@ -1,5 +1,6 @@
 const { Client, GatewayIntentBits, Routes, Events } = require("discord.js");
 const { submitEoa } = require("./commands/submitEoa");
+const express = require("express");
 const { initializeApp } = require("firebase/app");
 const {
   getFirestore,
@@ -7,6 +8,8 @@ const {
   getDocs,
   setDoc,
   doc,
+  query,
+  where,
 } = require("firebase/firestore/lite");
 const { REST } = require("@discordjs/rest");
 require("dotenv").config();
@@ -35,25 +38,57 @@ const client = new Client({
 
 // initializations
 client.login(BOT_TOKEN);
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const expressApp = express();
 
 // server functions
+async function canUserVoteFromEoa(eoa) {
+  const eoaMappingRef = collection(db, "eoamapping");
+  const que = query(eoaMappingRef, where("userEOA", "==", eoa));
+  const querySnapshot = await getDocs(que);
+  let docArray = [];
+  querySnapshot.forEach((doc) => {
+    docArray.push(doc.data());
+  });
+  if (docArray.length === 0) {
+    return false;
+  }
+  const userId = docArray[0].discordId;
+  const canVote = isUserHavingVotingRole(userId, GUILD_ID);
+  return canVote;
+}
 
-function getUserFromEoa() {
-  //
+async function isUserHavingVotingRole(userId, guildId) {
+  try {
+    const guild = await client.guilds.fetch(guildId);
+    const member = await guild.members.fetch(userId);
+    const isAdmin = member.roles.cache.some((role) => role.name === "voter");
+    return isAdmin;
+  } catch (error) {
+    console.error("Error:", error);
+    return false;
+  }
 }
 
 async function saveUserIdAndEoa(userId, userEoa) {
   try {
-
     await setDoc(doc(db, "eoamapping", userId), {
       userEOA: userEoa,
+      discordId: userId,
     });
   } catch (err) {
     console.log(err);
   }
 }
+
+// server
+expressApp.get("/api/canUserVoteFromEoa/:eoa", (req, res) => {
+  const eoa = req.params.eoa;
+  canUserVoteFromEoa(eoa).then((response) => {
+    res.send(response);
+  });
+});
 
 // bot client functions
 client.once(Events.ClientReady, (readyClient) => {
@@ -95,3 +130,8 @@ async function main() {
 }
 
 main();
+
+//port
+const PORT = process.env.PORT || 3000;
+
+expressApp.listen(PORT, console.log(`Server started on port ${PORT}`));
