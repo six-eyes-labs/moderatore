@@ -1,113 +1,135 @@
-import Image from 'next/image'
+"use client";
+import Modal from "@/components/Modal";
+import Paginate from "@/components/Paginate";
+import ProposalInfo from "@/components/proposal/ProposalInfo";
+import RuleInfo from "@/components/rule/RuleInfo";
+import { ModalTypes, useModal } from "@/config/ModalProvider";
+import { arbitratorSite, defaultServer } from "@/constants";
+import { fetchProposals } from "@/store/features/proposals";
+import { fetchRules } from "@/store/features/rules";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useWeb3Modal } from "@web3modal/wagmi/react";
+import Link from "next/link";
+import React, { useEffect, useMemo, useState } from "react";
+import { useAccount } from "wagmi";
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+  const dispatch = useAppDispatch();
+  const proposalEntities = useAppSelector((state) => state.proposals.entities);
+  const ruleEntities = useAppSelector((state) => state.rules.entities);
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+  const { isConnected } = useAccount();
+  const { open: connectWallet } = useWeb3Modal();
+
+  const { modalType, openModal, closeModal } = useModal();
+
+  const [currentProposalPage, setCurrentProposalPage] = useState(1);
+  const [currentRulePage, setCurrentRulePage] = useState(1);
+  const pageSize = 4;
+
+  const proposals = useMemo(() => {
+    const startIndex = (currentProposalPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return proposalEntities.slice(startIndex, endIndex);
+  }, [proposalEntities, currentProposalPage]);
+
+  const rules = useMemo(() => {
+    const startIndex = (currentRulePage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return ruleEntities.slice(startIndex, endIndex);
+  }, [ruleEntities, currentRulePage]);
+
+  const handleClick = () =>
+    isConnected ? openModal(ModalTypes.ProposeRule) : connectWallet();
+
+  useEffect(() => {
+    dispatch(fetchProposals(defaultServer));
+    dispatch(fetchRules(defaultServer));
+  }, []);
+
+  return (
+    <div className="flex flex-col w-full h-full min-h-full justify-start  py-20 md:py-24">
+      <div className="min-h-full">
+        <div className="flex justify-between content-center items-center">
+          <div className="flex flex-col">
+            <div className="heading items-start"> Proposals</div>
+            <div className="subheading items-start">
+              Explore all the proposed rules
+            </div>
+          </div>
+          <button
+            onClick={handleClick}
+            className="button bg-secondary text-text text-md md:text-lg"
+          >
+            Propose a Rule!
+          </button>
+          <Modal
+            isOpen={modalType === ModalTypes.ProposeRule}
+            onClose={closeModal}
+          >
+            <div>hi</div>
+          </Modal>
+        </div>
+
+        <div className=" py-3">
+          {proposals.map((proposal, index) => (
+            <ProposalInfo proposal={proposal} key={index} />
+          ))}
+        </div>
+        <Paginate
+          totalCount={proposalEntities.length}
+          currentPage={currentProposalPage}
+          pageSize={pageSize}
+          setPage={setCurrentProposalPage}
+        />
+      </div>
+      <div className="min-h-full">
+        <div className="flex justify-between content-center items-center">
+          <div className="flex flex-col">
+            <div className="heading items-start"> Rules</div>
+            <div className="subheading items-start">
+              List of rules community should abide by.
+            </div>
+          </div>
+          <div className="flex gap-2 flex-col md:flex-row">
+            <button
+              onClick={handleClick}
+              className="button bg-secondary text-text text-md md:text-lg"
+            >
+              Oppose a Rule!
+            </button>
+            <Link
+              className="button flex gap-2 items-center bg-primary text-gray-400 text-md md:text-lg"
+              href={arbitratorSite}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Disputes{" "}
+            </Link>
+          </div>
+
+          <Modal
+            isOpen={modalType === ModalTypes.OpposeRule}
+            onClose={closeModal}
+          >
+            <div>hi</div>
+          </Modal>
+        </div>
+
+        <div className="py-4">
+          {rules.map((rule, index) => (
+            <RuleInfo rule={rule} key={index} index={index} />
+          ))}
+        </div>
+        <Paginate
+          totalCount={ruleEntities.length}
+          pageSize={pageSize}
+          setPage={setCurrentRulePage}
+          currentPage={currentRulePage}
         />
       </div>
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+      {/* //rules */}
+    </div>
+  );
 }
