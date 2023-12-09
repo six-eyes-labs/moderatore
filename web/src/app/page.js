@@ -2,6 +2,7 @@
 import Modal from "@/components/Modal";
 import Paginate from "@/components/Paginate";
 import ProposalInfo from "@/components/proposal/ProposalInfo";
+import ProposeRulePopup from "@/components/proposal/ProposeRulePopup";
 import RuleInfo from "@/components/rule/RuleInfo";
 import { ModalTypes, useModal } from "@/config/ModalProvider";
 import { arbitratorSite, defaultServer } from "@/constants";
@@ -67,7 +68,7 @@ export default function Home() {
             isOpen={modalType === ModalTypes.ProposeRule}
             onClose={closeModal}
           >
-            <div>hi</div>
+            <ProposeRulePopup />
           </Modal>
         </div>
 
