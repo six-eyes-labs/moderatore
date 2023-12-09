@@ -1,48 +1,135 @@
 "use client";
+import Modal from "@/components/Modal";
+import Paginate from "@/components/Paginate";
+import ProposalInfo from "@/components/proposal/ProposalInfo";
+import RuleInfo from "@/components/rule/RuleInfo";
+import { ModalTypes, useModal } from "@/config/ModalProvider";
+import { arbitratorSite, defaultServer } from "@/constants";
+import { fetchProposals } from "@/store/features/proposals";
 import { fetchRules } from "@/store/features/rules";
-import { fetchServers } from "@/store/features/server";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useEffect } from "react";
+import { useWeb3Modal } from "@web3modal/wagmi/react";
+import Link from "next/link";
+import React, { useEffect, useMemo, useState } from "react";
+import { useAccount } from "wagmi";
 
 export default function Home() {
   const dispatch = useAppDispatch();
+  const proposalEntities = useAppSelector((state) => state.proposals.entities);
+  const ruleEntities = useAppSelector((state) => state.rules.entities);
+
+  const { isConnected } = useAccount();
+  const { open: connectWallet } = useWeb3Modal();
+
+  const { modalType, openModal, closeModal } = useModal();
+
+  const [currentProposalPage, setCurrentProposalPage] = useState(1);
+  const [currentRulePage, setCurrentRulePage] = useState(1);
+  const pageSize = 4;
+
+  const proposals = useMemo(() => {
+    const startIndex = (currentProposalPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return proposalEntities.slice(startIndex, endIndex);
+  }, [proposalEntities, currentProposalPage]);
+
+  const rules = useMemo(() => {
+    const startIndex = (currentRulePage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return ruleEntities.slice(startIndex, endIndex);
+  }, [ruleEntities, currentRulePage]);
+
+  const handleClick = () =>
+    isConnected ? openModal(ModalTypes.ProposeRule) : connectWallet();
 
   useEffect(() => {
-    dispatch(fetchServers());
+    dispatch(fetchProposals(defaultServer));
+    dispatch(fetchRules(defaultServer));
   }, []);
 
-  const servers = useAppSelector((state) => state.servers.entities);
-
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div class="w-100  bg-white rounded p-6">
-        <h2 class="text-2xl font-bold mb-4">Submit a String</h2>
-        <form id="myForm" class="space-y-4" action="#">
-          <div>
-            <label for="inputString" class="block text-sm font-semibold">
-              Input String
-            </label>
-            <input
-              id="inputString"
-              type="text"
-              placeholder="Enter your string"
-              class="w-full border-gray-300 rounded-md
-          focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none
-          focus:ring-2 focus:ring-opacity-50 px-4 py-2"
-            />
+    <div className="flex flex-col w-full h-full min-h-full justify-start  py-20 md:py-24">
+      <div className="min-h-full">
+        <div className="flex justify-between content-center items-center">
+          <div className="flex flex-col">
+            <div className="heading items-start"> Proposals</div>
+            <div className="subheading items-start">
+              Explore all the proposed rules
+            </div>
           </div>
-          <div>
-            <button
-              id="submitBtn"
-              type="submit"
-              class="w-full bg-indigo-600 text-white rounded-md
-          hover:bg-indigo-700 px-4 py-2"
-            >
-              Submit
-            </button>
-          </div>
-        </form>
+          <button
+            onClick={handleClick}
+            className="button bg-secondary text-text text-md md:text-lg"
+          >
+            Propose a Rule!
+          </button>
+          <Modal
+            isOpen={modalType === ModalTypes.ProposeRule}
+            onClose={closeModal}
+          >
+            <div>hi</div>
+          </Modal>
+        </div>
+
+        <div className=" py-3">
+          {proposals.map((proposal, index) => (
+            <ProposalInfo proposal={proposal} key={index} />
+          ))}
+        </div>
+        <Paginate
+          totalCount={proposalEntities.length}
+          currentPage={currentProposalPage}
+          pageSize={pageSize}
+          setPage={setCurrentProposalPage}
+        />
       </div>
-    </main>
+      <div className="min-h-full">
+        <div className="flex justify-between content-center items-center">
+          <div className="flex flex-col">
+            <div className="heading items-start"> Rules</div>
+            <div className="subheading items-start">
+              List of rules community should abide by.
+            </div>
+          </div>
+          <div className="flex gap-2 flex-col md:flex-row">
+            <button
+              onClick={handleClick}
+              className="button bg-secondary text-text text-md md:text-lg"
+            >
+              Oppose a Rule!
+            </button>
+            <Link
+              className="button flex gap-2 items-center bg-primary text-gray-400 text-md md:text-lg"
+              href={arbitratorSite}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Disputes{" "}
+            </Link>
+          </div>
+
+          <Modal
+            isOpen={modalType === ModalTypes.OpposeRule}
+            onClose={closeModal}
+          >
+            <div>hi</div>
+          </Modal>
+        </div>
+
+        <div className="py-4">
+          {rules.map((rule, index) => (
+            <RuleInfo rule={rule} key={index} index={index} />
+          ))}
+        </div>
+        <Paginate
+          totalCount={ruleEntities.length}
+          pageSize={pageSize}
+          setPage={setCurrentRulePage}
+          currentPage={currentRulePage}
+        />
+      </div>
+
+      {/* //rules */}
+    </div>
   );
 }

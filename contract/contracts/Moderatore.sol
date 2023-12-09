@@ -268,13 +268,15 @@ contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
 
     uint256 proposalCount = 0;
 
+    string[] private GuildIds;
+
     mapping(string => Server) public Servers;
     mapping(string => Rule[]) private ServerToRules;
     mapping(string => uint[]) private ServerToRuleIds;
     mapping(string => uint[]) private ServerToProposalIds;
     mapping(string => bool) private doesServerExist;
     mapping(uint256 => Proposal) public ProposalDetails;
-    mapping(uint => mapping(address => bool)) public hasVoted;
+    mapping(uint => mapping(address => bool)) private hasVoted;
     mapping(uint => Rule) public RuleDetails;
     mapping(uint => uint) DisputeToRule;
     mapping(bytes32 => VoteRequest) public VoteRequests;
@@ -329,10 +331,10 @@ contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
         "const guildId = args[0];"
         "const userAddress = args[1];"
         "const apiResponse = await Functions.makeHttpRequest({"
-        "url: `https://39b6-2406-7400-63-96c3-4978-c342-aa38-f5f8.ngrok-free.app/api/canUserVoteFromEoa/${userAddress}/`"
+        "url: `https://moderatore-production.up.railway.app/api/canUserVoteFromEoa/${userAddress}?guildId=${guildId}`"
         "});"
-        "const { eligible } = apiResponse;"
-        "return Functions.encodeUint256(eligible);";
+        "const { data } = apiResponse;"
+        "return Functions.encodeUint256(data.eligible);";
 
     /**
      * @dev Contract constructor.
@@ -362,6 +364,7 @@ contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
             guildId: _guildId,
             createdOn: block.timestamp
         });
+        GuildIds.push(_guildId);
     }
 
     function proposeRule(
@@ -703,6 +706,10 @@ contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
     /**
      * getters
      */
+    function getServers() public view returns (string[] memory) {
+        return GuildIds;
+    }
+
     function getRules(
         string memory _guildId
     ) public view returns (Rule[] memory rules) {
@@ -722,7 +729,7 @@ contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
     }
 
     //helpers
-    function bytesToUint(bytes memory b) public pure returns (uint256) {
+    function bytesToUint(bytes memory b) internal pure returns (uint256) {
         uint256 number;
         for (uint i = 0; i < b.length; i++) {
             number =
@@ -735,7 +742,7 @@ contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
 
     function addressToString(
         address _addr
-    ) public pure returns (string memory) {
+    ) internal pure returns (string memory) {
         bytes32 value = bytes32(uint256(uint160(_addr)));
         bytes memory alphabet = "0123456789abcdef";
 
