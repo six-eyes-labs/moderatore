@@ -22,6 +22,6 @@ const getProvider = () => {
 };
 
 const defaultRpc = `https://polygon-mumbai.infura.io/v3/${infuraApi}`;
-const fallbackRpcs = ["https://rpc.ankr.com/polygon_mumbai"];
+const fallbackRpcs = [];
 
 exports.getProvider = getProvider;

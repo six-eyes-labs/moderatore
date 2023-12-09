@@ -17,7 +17,7 @@ const {
 const { REST } = require("@discordjs/rest");
 const { moderatorAbi, moderatorAddress } = require("./utils/moderatorAbi");
 const { getProvider } = require("./utils/getProvider");
-const { generateFunction } = require("./utils/actions");
+const { generateFunction, createBulletList } = require("./utils/actions");
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API,
@@ -65,17 +65,31 @@ const contract = new ethers.Contract(moderatorAddress, moderatorAbi, provider);
 let rules = null;
 
 // contract functions
-contract.getRules(GUILD_ID).then((res) => {
-  rules = res.map((item) => {
-    return {
-      func: item[item.length - 1],
-      reason: item[item.length - 2],
-    };
+const getRules = () => {
+  contract.getRules(GUILD_ID).then((res) => {
+    const newRules = res.map((item) => {
+      return {
+        func: item[item.length - 1],
+        reason: item[item.length - 2],
+      };
+    });
+
+    rules = newRules;
   });
-});
+};
 
 contract.on("RuleAdded", (event) => {
   console.log({ event });
+  getRules();
+  // add rule
+  if (!rules) return;
+  const rulesDescriptionArray = rules.map((rule) => rule.reason);
+  const channel = client.channels.cache.get("1183034519738134549");
+
+  if (rulesDescriptionArray.length !== 0 && channel) {
+    const formattedList = createBulletList(rulesDescriptionArray);
+    channel.send(formattedList);
+  }
 });
 
 contract.on("RuleProposed", (event) => {
@@ -84,6 +98,7 @@ contract.on("RuleProposed", (event) => {
 
 contract.on("RuleRemoved", (event) => {
   console.log({ event });
+  getRules();
 });
 
 // server functions
@@ -142,46 +157,29 @@ client.once(Events.ClientReady, (readyClient) => {
 
 client.on("messageCreate", (message) => {
   const funtionToRunEveryMessage = async () => {
-    // if (message.content === "ban") {
-    const guild = message.guild;
-    const user = message.author;
-    //   // Ban the user with a reason
-    //   try {
-    //     await user.send("u banned");
-    //     await guild.members.ban(user, { reason: "User sent 'Moye'" });
-    //     console.log(`Banned user: ${user.tag}`);
-    //     // After 30 seconds, unban the user
-    //     setTimeout(async () => {
-    //       try {
-    //         await guild.members.unban(user, "Unbanned after 30 seconds");
-    //         console.log(`Unbanned user: ${user.tag}`);
-    //       } catch (error) {
-    //         console.error("Error unbanning user:", error);
-    //       }
-    //     }, 30000);
-    //   } catch (error) {
-    //     console.error("Error banning user:", error);
-    //   }
-    // }
+    try {
+      const guild = message.guild;
+      const user = message.author;
 
-    let shouldBanned = false;
-    if (!rules) return;
+      let shouldBanned = false;
+      console.log("rules", rules);
+      if (!rules) return;
 
-    // rules.forEach((rule) => {
-    for (const rule of rules) {
-      shouldBanned = generateFunction(rule.func)(message);
-      if (shouldBanned) {
-        await user.send("u banned");
-        await user.send("https://tenor.com/pcHIYYcnO2.gif");
-        await guild.members.ban(user, { reason: "User sent 'Moye'" });
-        console.log(`Banned user: ${user.tag}`);
-        console.log("shoud be banned");
-        return;
-        // ban user , return
+      for (const rule of rules) {
+        shouldBanned = generateFunction(rule.func)(message);
+        if (shouldBanned) {
+          await user.send("u banned");
+          await user.send("https://tenor.com/pcHIYYcnO2.gif");
+          await guild.members.ban(user, { reason: "User sent 'Moye'" });
+          await message.reply(
+            `User was banned bc of the reason '${rule.reason}'`
+          );
+          return;
+        }
       }
+    } catch (err) {
+      console.log(err);
     }
-
-    // });
   };
   funtionToRunEveryMessage();
 });
@@ -215,7 +213,7 @@ async function main() {
 }
 
 main();
-
+getRules();
 //port
 const PORT = process.env.PORT || 3000;
 
