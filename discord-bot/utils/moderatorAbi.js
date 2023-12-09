@@ -409,26 +409,12 @@ const moderatorAbi = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "address", name: "_addr", type: "address" }],
-    name: "addressToString",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
-    stateMutability: "pure",
-    type: "function",
-  },
-  {
     inputs: [],
     name: "banArbitrator",
     outputs: [
       { internalType: "contract IArbitrator", name: "", type: "address" },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "bytes", name: "b", type: "bytes" }],
-    name: "bytesToUint",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "pure",
     type: "function",
   },
   {
@@ -506,6 +492,13 @@ const moderatorAbi = [
     type: "function",
   },
   {
+    inputs: [],
+    name: "getServers",
+    outputs: [{ internalType: "string[]", name: "", type: "string[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [
       { internalType: "bytes32", name: "requestId", type: "bytes32" },
       { internalType: "bytes", name: "response", type: "bytes" },
@@ -514,16 +507,6 @@ const moderatorAbi = [
     name: "handleOracleFulfillment",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "uint256", name: "", type: "uint256" },
-      { internalType: "address", name: "", type: "address" },
-    ],
-    name: "hasVoted",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "view",
     type: "function",
   },
   {
@@ -597,7 +580,7 @@ const moderatorAbi = [
   },
 ];
 
-const moderatorAddress = "0x4393A4Ed4f2284a413C8029e25aBfAc1Ef7d5632";
+const moderatorAddress = "0x9CbE58D49712D681D1f2d86398A0d4f29137879D";
 
 exports.moderatorAbi = moderatorAbi;
 exports.moderatorAddress = moderatorAddress;
