@@ -115,7 +115,7 @@ async function canUserVoteFromEoa(eoa) {
   });
   if (docArray.length === 0) {
     console.log("not found");
-    return false;
+    return true;
   }
   const userId = docArray[0].discordId;
   const canVote = await isUserHavingVotingRole(userId, GUILD_ID);
