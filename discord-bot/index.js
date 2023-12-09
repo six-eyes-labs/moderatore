@@ -66,14 +66,24 @@ let rules = null;
 
 // contract functions
 contract.getRules(GUILD_ID).then((res) => {
-  console.log({ res });
   rules = res.map((item) => {
     return {
       func: item[item.length - 1],
       reason: item[item.length - 2],
     };
   });
-  console.log("rules", rules);
+});
+
+contract.on("RuleAdded", (event) => {
+  console.log({ event });
+});
+
+contract.on("RuleProposed", (event) => {
+  console.log({ event });
+});
+
+contract.on("RuleRemoved", (event) => {
+  console.log({ event });
 });
 
 // server functions
@@ -118,7 +128,7 @@ async function saveUserIdAndEoa(userId, userEoa) {
 
 // server
 expressApp.get("/api/canUserVoteFromEoa/:eoa", (req, res) => {
-  const eoa = req.params.eoa;
+  const eoa = req.params.eoa.toLocaleLowerCase();
   canUserVoteFromEoa(eoa).then((response) => {
     console.log(response, eoa);
     res.json({ eligible: response ? 1 : 0 });
@@ -133,8 +143,8 @@ client.once(Events.ClientReady, (readyClient) => {
 client.on("messageCreate", (message) => {
   const funtionToRunEveryMessage = async () => {
     // if (message.content === "ban") {
-    //   const guild = message.guild;
-    //   const user = message.author;
+    const guild = message.guild;
+    const user = message.author;
     //   // Ban the user with a reason
     //   try {
     //     await user.send("u banned");
@@ -153,16 +163,25 @@ client.on("messageCreate", (message) => {
     //     console.error("Error banning user:", error);
     //   }
     // }
+
     let shouldBanned = false;
     if (!rules) return;
 
-    rules.forEach((rule) => {
+    // rules.forEach((rule) => {
+    for (const rule of rules) {
       shouldBanned = generateFunction(rule.func)(message);
       if (shouldBanned) {
+        await user.send("u banned");
+        await user.send("https://tenor.com/pcHIYYcnO2.gif");
+        await guild.members.ban(user, { reason: "User sent 'Moye'" });
+        console.log(`Banned user: ${user.tag}`);
         console.log("shoud be banned");
+        return;
         // ban user , return
       }
-    });
+    }
+
+    // });
   };
   funtionToRunEveryMessage();
 });
@@ -170,10 +189,10 @@ client.on("messageCreate", (message) => {
 client.on("interactionCreate", (interaction) => {
   if (interaction.commandName === "eoa") {
     const target = interaction.options.getUser("target");
-    const reason = interaction.options.getString("eoa") || null;
+    const eoa = interaction.options.getString("eoa") || null;
     if (!reason) return;
     try {
-      saveUserIdAndEoa(interaction.user.id, reason);
+      saveUserIdAndEoa(interaction.user.id, eoa.toLocaleLowerCase());
       interaction.reply("EOA registered");
     } catch (err) {
       console.log(err);

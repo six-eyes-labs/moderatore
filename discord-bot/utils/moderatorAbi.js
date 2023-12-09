@@ -18,6 +18,8 @@ const moderatorAbi = [
     type: "constructor",
   },
   { inputs: [], name: "AlreadyVoted", type: "error" },
+  { inputs: [], name: "EmptyArgs", type: "error" },
+  { inputs: [], name: "EmptySource", type: "error" },
   {
     inputs: [
       { internalType: "uint256", name: "_available", type: "uint256" },
@@ -35,8 +37,23 @@ const moderatorAbi = [
     type: "error",
   },
   { inputs: [], name: "InvalidStatus", type: "error" },
+  { inputs: [], name: "NoInlineSecrets", type: "error" },
   { inputs: [], name: "NotArbitrator", type: "error" },
+  {
+    inputs: [
+      { internalType: "address", name: "voter", type: "address" },
+      { internalType: "uint256", name: "proposalId", type: "uint256" },
+    ],
+    name: "NotEligibleToVote",
+    type: "error",
+  },
+  { inputs: [], name: "OnlyRouterCanFulfill", type: "error" },
   { inputs: [], name: "UnexistingDispute", type: "error" },
+  {
+    inputs: [{ internalType: "bytes32", name: "requestId", type: "bytes32" }],
+    name: "UnexpectedRequestID",
+    type: "error",
+  },
   {
     anonymous: false,
     inputs: [
@@ -116,6 +133,22 @@ const moderatorAbi = [
       },
     ],
     name: "MetaEvidence",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "bytes32", name: "id", type: "bytes32" },
+    ],
+    name: "RequestFulfilled",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "bytes32", name: "id", type: "bytes32" },
+    ],
+    name: "RequestSent",
     type: "event",
   },
   {
@@ -249,6 +282,70 @@ const moderatorAbi = [
     type: "event",
   },
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "bytes32",
+        name: "requestId",
+        type: "bytes32",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "voter",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "proposalId",
+        type: "uint256",
+      },
+      { indexed: false, internalType: "bytes", name: "err", type: "bytes" },
+      {
+        indexed: false,
+        internalType: "bytes",
+        name: "response",
+        type: "bytes",
+      },
+    ],
+    name: "VoteDeclined",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "bytes32",
+        name: "requestId",
+        type: "bytes32",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "voter",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "proposalId",
+        type: "uint256",
+      },
+      { indexed: false, internalType: "bytes", name: "err", type: "bytes" },
+      {
+        indexed: false,
+        internalType: "bytes",
+        name: "response",
+        type: "bytes",
+      },
+    ],
+    name: "VoteRegistered",
+    type: "event",
+  },
+  {
     inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     name: "ProposalDetails",
     outputs: [
@@ -301,12 +398,37 @@ const moderatorAbi = [
     type: "function",
   },
   {
+    inputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
+    name: "VoteRequests",
+    outputs: [
+      { internalType: "address", name: "voter", type: "address" },
+      { internalType: "uint256", name: "proposalId", type: "uint256" },
+      { internalType: "uint256", name: "vote", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_addr", type: "address" }],
+    name: "addressToString",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "pure",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "banArbitrator",
     outputs: [
       { internalType: "contract IArbitrator", name: "", type: "address" },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "bytes", name: "b", type: "bytes" }],
+    name: "bytesToUint",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "pure",
     type: "function",
   },
   {
@@ -336,14 +458,18 @@ const moderatorAbi = [
   {
     inputs: [{ internalType: "string", name: "_guildId", type: "string" }],
     name: "getProposalIds",
-    outputs: [{ internalType: "uint256[]", name: "", type: "uint256[]" }],
+    outputs: [
+      { internalType: "uint256[]", name: "proposalIds", type: "uint256[]" },
+    ],
     stateMutability: "view",
     type: "function",
   },
   {
     inputs: [{ internalType: "string", name: "_guildId", type: "string" }],
     name: "getRuleIds",
-    outputs: [{ internalType: "uint256[]", name: "", type: "uint256[]" }],
+    outputs: [
+      { internalType: "uint256[]", name: "ruleIds", type: "uint256[]" },
+    ],
     stateMutability: "view",
     type: "function",
   },
@@ -372,11 +498,22 @@ const moderatorAbi = [
           { internalType: "string", name: "checkFn", type: "string" },
         ],
         internalType: "struct Moderatore.Rule[]",
-        name: "",
+        name: "rules",
         type: "tuple[]",
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "bytes32", name: "requestId", type: "bytes32" },
+      { internalType: "bytes", name: "response", type: "bytes" },
+      { internalType: "bytes", name: "err", type: "bytes" },
+    ],
+    name: "handleOracleFulfillment",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -418,13 +555,6 @@ const moderatorAbi = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "uint256", name: "_proposalId", type: "uint256" }],
-    name: "reclaimFee",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [
       { internalType: "uint256", name: "_disputeID", type: "uint256" },
       { internalType: "uint256", name: "_ruling", type: "uint256" },
@@ -455,17 +585,19 @@ const moderatorAbi = [
   },
   {
     inputs: [
+      { internalType: "uint64", name: "subscriptionId", type: "uint64" },
       { internalType: "uint256", name: "_proposalId", type: "uint256" },
       { internalType: "uint256", name: "_option", type: "uint256" },
+      { internalType: "string", name: "guildId", type: "string" },
     ],
     name: "vote",
-    outputs: [],
+    outputs: [{ internalType: "bytes32", name: "requestId", type: "bytes32" }],
     stateMutability: "nonpayable",
     type: "function",
   },
 ];
 
-const moderatorAddress = "0x08Ed10F43Bf75eB0f9f6E0cD932008E43c483fB3";
+const moderatorAddress = "0x4393A4Ed4f2284a413C8029e25aBfAc1Ef7d5632";
 
 exports.moderatorAbi = moderatorAbi;
 exports.moderatorAddress = moderatorAddress;

@@ -6,9 +6,7 @@ const infuraApi = process.env.INFURA_API;
 const getProvider = () => {
   try {
     const allRpcs = [defaultRpc, ...fallbackRpcs];
-    console.log("allRpcs", allRpcs);
     const providers = allRpcs.map((rpc) => new ethers.JsonRpcProvider(rpc));
-
     const network = new ethers.Network("mumbai", 80001n);
 
     return new ethers.FallbackProvider(providers, network, {
