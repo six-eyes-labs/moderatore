@@ -42,15 +42,7 @@ const Footer = () => {
         </div>
 
         <div className="flex flex-row w-full border-t text-center justify-center pt-4">
-          Made with{" "}
-          <Image
-            className="mx-1"
-            src={"images/heart.svg"}
-            width={20}
-            height={20}
-            alt="heart"
-          />{" "}
-          by @Akatsuki
+          Made with ❤️  by @Akatsuki
         </div>
       </div>
     </div>

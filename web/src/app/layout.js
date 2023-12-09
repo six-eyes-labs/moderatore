@@ -6,6 +6,7 @@ import { TrackTxnProvider } from "@/config/TrackTxnProvider";
 import { ModalProvider } from "@/config/ModalProvider";
 import Appbar from "@/components/Appbar";
 import Footer from "@/components/Footer";
+import "@uiw/react-textarea-code-editor/dist.css";
 
 const dosis = Dosis({ subsets: ["latin"] });
 
