@@ -29,11 +29,24 @@ const GUILD_ID = process.env.GUILD_ID;
 
 const rest = new REST({ version: "10" }).setToken(BOT_TOKEN);
 
-const { GuildMembers, GuildMessages, Guilds, MessageContent } =
-  GatewayIntentBits;
+const {
+  GuildMembers,
+  GuildMessages,
+  Guilds,
+  MessageContent,
+  GuildModeration,
+  AutoModerationExecution,
+} = GatewayIntentBits;
 
 const client = new Client({
-  intents: [GuildMembers, GuildMessages, Guilds, MessageContent],
+  intents: [
+    GuildMembers,
+    GuildMessages,
+    Guilds,
+    MessageContent,
+    GuildModeration,
+    AutoModerationExecution,
+  ],
 });
 
 // initializations
@@ -121,9 +134,33 @@ client.once(Events.ClientReady, (readyClient) => {
 });
 
 client.on("messageCreate", (message) => {
-  if (message.content === "Moye") {
-    message.channel.send("Moye :(");
-  }
+  const funtionToRunEveryMessage = async () => {
+    if (message.content === "ban") {
+      const guild = message.guild;
+      const user = message.author;
+
+      // Ban the user with a reason
+      try {
+        await user.send("u banned");
+        await guild.members.ban(user, { reason: "User sent 'Moye'" });
+
+        console.log(`Banned user: ${user.tag}`);
+
+        // After 30 seconds, unban the user
+        setTimeout(async () => {
+          try {
+            await guild.members.unban(user, "Unbanned after 30 seconds");
+            console.log(`Unbanned user: ${user.tag}`);
+          } catch (error) {
+            console.error("Error unbanning user:", error);
+          }
+        }, 30000);
+      } catch (error) {
+        console.error("Error banning user:", error);
+      }
+    }
+  };
+  funtionToRunEveryMessage();
 });
 
 client.on("interactionCreate", (interaction) => {
