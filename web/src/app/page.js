@@ -3,6 +3,7 @@ import Modal from "@/components/Modal";
 import Paginate from "@/components/Paginate";
 import ProposalInfo from "@/components/proposal/ProposalInfo";
 import ProposeRulePopup from "@/components/proposal/ProposeRulePopup";
+import OpposeRulePopup from "@/components/rule/OpposeRulePopup";
 import RuleInfo from "@/components/rule/RuleInfo";
 import { ModalTypes, useModal } from "@/config/ModalProvider";
 import { arbitratorSite, defaultServer } from "@/constants";
@@ -50,7 +51,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col w-full h-full min-h-full justify-start  py-20 md:py-24">
-      <div className="min-h-full">
+      <div className="min-h-screen">
         <div className="flex justify-between content-center items-center">
           <div className="flex flex-col">
             <div className="heading items-start"> Proposals</div>
@@ -84,7 +85,7 @@ export default function Home() {
           setPage={setCurrentProposalPage}
         />
       </div>
-      <div className="min-h-full">
+      <div className="min-h-screen">
         <div className="flex justify-between content-center items-center">
           <div className="flex flex-col">
             <div className="heading items-start"> Rules</div>
@@ -94,7 +95,7 @@ export default function Home() {
           </div>
           <div className="flex gap-2 flex-col md:flex-row">
             <button
-              onClick={handleClick}
+              onClick={() => openModal(ModalTypes.OpposeRule)}
               className="button bg-secondary text-text text-md md:text-lg"
             >
               Oppose a Rule!
@@ -113,7 +114,7 @@ export default function Home() {
             isOpen={modalType === ModalTypes.OpposeRule}
             onClose={closeModal}
           >
-            <div>hi</div>
+            <OpposeRulePopup />
           </Modal>
         </div>
 
