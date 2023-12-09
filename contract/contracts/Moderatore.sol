@@ -413,7 +413,7 @@ contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
         uint64 subscriptionId,
         uint256 _proposalId,
         uint256 _option,
-        string[] calldata args
+        string memory guildId
     ) external returns (bytes32 requestId) {
         Proposal memory proposal = ProposalDetails[_proposalId];
 
@@ -428,6 +428,12 @@ contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
         //prepare request
         FunctionsRequest.Request memory req;
         req.initializeRequestForInlineJavaScript(source); // Initialize the request with JS code
+
+        // string[] calldata args = [guildId, addressToString(msg.sender)];
+
+        string[] memory args = new string[](2);
+        args[0] = guildId;
+        args[1] = addressToString(msg.sender);
 
         req.setArgs(args); // Set the arguments for the request
 
@@ -462,7 +468,7 @@ contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
         VoteRequest memory voteRequest = VoteRequests[requestId];
 
         if (voteRequest.voter == address(0)) {
-            // revert UnexpectedRequestID(requestId); // Check if request IDs maexisttch
+            revert UnexpectedRequestID(requestId); // Check if request IDs maexisttch
         }
 
         uint res = bytesToUint(response);
@@ -476,7 +482,7 @@ contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
                 err,
                 response
             );
-            // revert NotEligibleToVote(voteRequest.voter, voteRequest.proposalId);
+            revert NotEligibleToVote(voteRequest.voter, voteRequest.proposalId);
         }
 
         Proposal storage proposal = ProposalDetails[voteRequest.proposalId];
@@ -725,5 +731,21 @@ contract Moderatore is IArbitrable, IEvidence, FunctionsClient {
                 (2 ** (8 * (b.length - (i + 1))));
         }
         return number;
+    }
+
+    function addressToString(
+        address _addr
+    ) public pure returns (string memory) {
+        bytes32 value = bytes32(uint256(uint160(_addr)));
+        bytes memory alphabet = "0123456789abcdef";
+
+        bytes memory str = new bytes(51);
+        str[0] = "0";
+        str[1] = "x";
+        for (uint256 i = 0; i < 20; i++) {
+            str[2 + i * 2] = alphabet[uint8(value[i + 12] >> 4)];
+            str[3 + i * 2] = alphabet[uint8(value[i + 12] & 0x0f)];
+        }
+        return string(str);
     }
 }
