@@ -144,6 +144,8 @@ async function saveUserIdAndEoa(userId, userEoa) {
 // server
 expressApp.get("/api/canUserVoteFromEoa/:eoa", (req, res) => {
   const eoa = req.params.eoa.toLocaleLowerCase();
+  const query = req.query.guildId;
+  console.log({ query }); //to be used later
   canUserVoteFromEoa(eoa).then((response) => {
     console.log(response, eoa);
     res.json({ eligible: response ? 1 : 0 });
