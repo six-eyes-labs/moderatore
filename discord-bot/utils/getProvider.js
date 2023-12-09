@@ -1,11 +1,15 @@
+require("dotenv").config();
 const { ethers } = require("ethers");
+
+const infuraApi = process.env.INFURA_API;
 
 const getProvider = () => {
   try {
     const allRpcs = [defaultRpc, ...fallbackRpcs];
+    console.log("allRpcs", allRpcs);
     const providers = allRpcs.map((rpc) => new ethers.JsonRpcProvider(rpc));
 
-    const network = new ethers.Network("goerli", 5n);
+    const network = new ethers.Network("mumbai", 80001n);
 
     return new ethers.FallbackProvider(providers, network, {
       cacheTimeout: 5000,
@@ -18,10 +22,8 @@ const getProvider = () => {
     console.log(err);
   }
 };
-const defaultRpc = `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API}`;
-const fallbackRpcs = [
-  "https://rpc.ankr.com/polygon_mumbai",
-  "https://polygon-mumbai.gateway.tenderly.co/",
-];
+
+const defaultRpc = `https://polygon-mumbai.infura.io/v3/${infuraApi}`;
+const fallbackRpcs = ["https://rpc.ankr.com/polygon_mumbai"];
 
 exports.getProvider = getProvider;

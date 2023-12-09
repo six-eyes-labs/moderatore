@@ -1,6 +1,9 @@
+require("dotenv").config();
+
 const { Client, GatewayIntentBits, Routes, Events } = require("discord.js");
 const { submitEoa } = require("./commands/submitEoa");
 const express = require("express");
+const { ethers } = require("ethers");
 const { initializeApp } = require("firebase/app");
 const {
   getFirestore,
@@ -12,7 +15,9 @@ const {
   where,
 } = require("firebase/firestore/lite");
 const { REST } = require("@discordjs/rest");
-require("dotenv").config();
+const { moderatorAbi, moderatorAddress } = require("./utils/moderatorAbi");
+const { getProvider } = require("./utils/getProvider");
+const { generateFunction } = require("./utils/actions");
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API,
@@ -54,31 +59,22 @@ client.login(BOT_TOKEN);
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const expressApp = express();
+const provider = getProvider();
+const contract = new ethers.Contract(moderatorAddress, moderatorAbi, provider);
 
-const getProvider = () => {
-  try {
-    const allRpcs = [defaultRpc, ...fallbackRpcs];
-    const providers = allRpcs.map((rpc) => new ethers.JsonRpcProvider(rpc));
+let rules = null;
 
-    const network = new ethers.Network("goerli", 5n);
-
-    return new ethers.FallbackProvider(providers, network, {
-      cacheTimeout: 5000,
-      eventQuorum: 2,
-      eventWorkers: 1,
-      pollingInterval: 1000,
-      quorum: 1,
-    });
-  } catch (err) {
-    console.log(err);
-  }
-};
-const defaultRpc = "https://goerli.infura.io/v3/${process.env.INFURA_KEY}";
-const fallbackRpcs = [
-  "https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}",
-  "https://ethereum-goerli.publicnode.com/",
-  "https://rpc.ankr.com/eth_goerli",
-];
+// contract functions
+contract.getRules(GUILD_ID).then((res) => {
+  console.log({ res });
+  rules = res.map((item) => {
+    return {
+      func: item[item.length - 1],
+      reason: item[item.length - 2],
+    };
+  });
+  console.log("rules", rules);
+});
 
 // server functions
 async function canUserVoteFromEoa(eoa) {
@@ -124,7 +120,8 @@ async function saveUserIdAndEoa(userId, userEoa) {
 expressApp.get("/api/canUserVoteFromEoa/:eoa", (req, res) => {
   const eoa = req.params.eoa;
   canUserVoteFromEoa(eoa).then((response) => {
-    res.send(response);
+    console.log(response, eoa);
+    res.json({ eligible: response ? 1 : 0 });
   });
 });
 
@@ -135,30 +132,37 @@ client.once(Events.ClientReady, (readyClient) => {
 
 client.on("messageCreate", (message) => {
   const funtionToRunEveryMessage = async () => {
-    if (message.content === "ban") {
-      const guild = message.guild;
-      const user = message.author;
+    // if (message.content === "ban") {
+    //   const guild = message.guild;
+    //   const user = message.author;
+    //   // Ban the user with a reason
+    //   try {
+    //     await user.send("u banned");
+    //     await guild.members.ban(user, { reason: "User sent 'Moye'" });
+    //     console.log(`Banned user: ${user.tag}`);
+    //     // After 30 seconds, unban the user
+    //     setTimeout(async () => {
+    //       try {
+    //         await guild.members.unban(user, "Unbanned after 30 seconds");
+    //         console.log(`Unbanned user: ${user.tag}`);
+    //       } catch (error) {
+    //         console.error("Error unbanning user:", error);
+    //       }
+    //     }, 30000);
+    //   } catch (error) {
+    //     console.error("Error banning user:", error);
+    //   }
+    // }
+    let shouldBanned = false;
+    if (!rules) return;
 
-      // Ban the user with a reason
-      try {
-        await user.send("u banned");
-        await guild.members.ban(user, { reason: "User sent 'Moye'" });
-
-        console.log(`Banned user: ${user.tag}`);
-
-        // After 30 seconds, unban the user
-        setTimeout(async () => {
-          try {
-            await guild.members.unban(user, "Unbanned after 30 seconds");
-            console.log(`Unbanned user: ${user.tag}`);
-          } catch (error) {
-            console.error("Error unbanning user:", error);
-          }
-        }, 30000);
-      } catch (error) {
-        console.error("Error banning user:", error);
+    rules.forEach((rule) => {
+      shouldBanned = generateFunction(rule.func)(message);
+      if (shouldBanned) {
+        console.log("shoud be banned");
+        // ban user , return
       }
-    }
+    });
   };
   funtionToRunEveryMessage();
 });
