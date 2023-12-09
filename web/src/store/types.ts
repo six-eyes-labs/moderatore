@@ -1,7 +1,4 @@
-export interface Server {
-  guildId: string;
-  creadtedOn: number;
-}
+export type Server = string;
 
 export interface Rule {
   id: string;

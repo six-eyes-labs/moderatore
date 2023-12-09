@@ -3,13 +3,11 @@ import { Rule, Proposal, Server } from "../types";
 import { modContract } from "@/constants";
 
 export const getServers = async () => {
-  // const servers = await publicClient.readContract({
-  //   ...modContract,
-  //   functionName: "getServers",
-  // });
-  return [
-    { guildId: "1182765847962464276", creadtedOn: 1231241241 },
-  ] as Server[];
+  const servers = await publicClient.readContract({
+    ...modContract,
+    functionName: "getServers",
+  });
+  return servers as Server[];
 };
 
 export const getRules = async (guildId: string) => {
