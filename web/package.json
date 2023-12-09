@@ -12,6 +12,7 @@
     "@reduxjs/toolkit": "^2.0.1",
     "@web3modal/wagmi": "^3.4.0",
     "encoding": "^0.1.13",
+    "framer-motion": "^10.16.16",
     "lokijs": "^1.5.12",
     "next": "14.0.4",
     "pino-pretty": "^10.2.3",

@@ -2,26 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+body {
+  color: rgb(var(--foreground-rgb));
+  background: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+@layer components {
+  .heading {
+    @apply text-lg md:text-3xl font-medium text-text;
+  }
+  .subheading {
+    @apply text-sm md:text-lg  text-text;
+  }
+  .button {
+    @apply h-fit p-1 px-2 border border-black hover:scale-110 focus:outline-none disabled:bg-gray-400 bg-secondary text-text rounded-md;
+  }
+  section {
+    @apply flex h-screen min-h-screen w-full flex-col md:flex-row items-center  justify-center md:justify-between py-24;
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+::-webkit-scrollbar {
+  width: 5px;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #495169;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #dbccf5;
 }
