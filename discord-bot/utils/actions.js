@@ -2,7 +2,7 @@ const generateFunction = (stringFunction) => {
   return new Function(`return ${stringFunction}`)();
 };
 
-const createBulletList = (items) => {
+const createBulletList = (title, items) => {
   if (!Array.isArray(items) || items.length === 0) {
     return "No items to list.";
   }
@@ -10,7 +10,7 @@ const createBulletList = (items) => {
   const bulletList = items
     .map((item, index) => `${index + 1}. ${item}`)
     .join("\n");
-  return `**Rules:**\n${bulletList}`;
+  return `**${title}**\n${bulletList}`;
 };
 
 exports.generateFunction = generateFunction;
