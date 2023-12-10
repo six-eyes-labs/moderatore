@@ -1,5 +1,5 @@
 import { PROPOSAL_PERIOD } from "@/constants";
-import { Proposal, ProposalStatus } from "@/store/types";
+import { Proposal, ProposalStatus, Rule } from "@/store/types";
 
 export const getStatus = (proposal: Proposal) => {
   if (Date.now() > parseInt(proposal.proposedOn) * 1000 + PROPOSAL_PERIOD) {

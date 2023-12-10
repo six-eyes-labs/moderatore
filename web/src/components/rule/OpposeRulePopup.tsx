@@ -20,7 +20,7 @@ const OpposeRulePopup = () => {
     setIsOpen(false);
   };
 
-  const { write, isLoading: isConfirming } = useContractWrite({
+  const { write, isLoading: isConfirming } = useContractWrite<any, any, any>({
     ...modContract,
     functionName: "opposeRule",
     value: parseEther("0.0001"), // currently hardcoded for testing

@@ -17,7 +17,7 @@ const ProposalInfo = ({ proposal }: { proposal: Proposal }) => {
   const { isConnected } = useAccount();
   const { open: connectWallet } = useWeb3Modal();
 
-  const { write, isLoading: isConfirming } = useContractWrite<any>({
+  const { write, isLoading: isConfirming } = useContractWrite<any, any, any>({
     ...modContract,
     functionName: "executeProposal",
     onSuccess(data) {

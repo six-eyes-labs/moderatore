@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { Proposal } from "@/store/types";
 import { useContractWrite } from "wagmi";
 import { defaultServer, modContract } from "@/constants";
@@ -9,7 +10,7 @@ const VotePopup = ({ proposal }: { proposal: Proposal }) => {
   const { closeModal } = useModal();
   const { trackTxn } = useTrackTransaction();
 
-  const { write, isLoading: isConfirming } = useContractWrite({
+  const { write, isLoading: isConfirming } = useContractWrite<any, any, any>({
     ...modContract,
     functionName: "vote",
     onSuccess(data) {

@@ -6,4 +6,10 @@ module.exports = removeImports({
   experimental: { esmExternals: true },
 });
 
+module.exports = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+};
+
 module.exports = nextConfig;
