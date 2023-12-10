@@ -76,7 +76,6 @@ const getRules = () => {
         reason: item[item.length - 2],
       };
     });
-
     rules = newRules;
   });
 };
@@ -90,13 +89,26 @@ contract.on("RuleAdded", (event) => {
   const channel = client.channels.cache.get("1183034519738134549");
 
   if (rulesDescriptionArray.length !== 0 && channel) {
-    const formattedList = createBulletList(rulesDescriptionArray);
+    const formattedList = createBulletList("Added rule", rulesDescriptionArray);
     channel.send(formattedList);
   }
 });
 
 contract.on("RuleProposed", (event) => {
   console.log({ event });
+  getRules();
+  // add rule
+  if (!rules) return;
+  const rulesDescriptionArray = rules.map((rule) => rule.reason);
+  const channel = client.channels.cache.get("1183034519738134549");
+
+  if (rulesDescriptionArray.length !== 0 && channel) {
+    const formattedList = createBulletList(
+      "Proposed rule",
+      rulesDescriptionArray
+    );
+    channel.send(formattedList);
+  }
 });
 
 contract.on("RuleRemoved", (event) => {
@@ -173,9 +185,9 @@ client.on("messageCreate", (message) => {
       for (const rule of rules) {
         shouldBanned = generateFunction(rule.func)(message);
         if (shouldBanned) {
-          await user.send("u banned");
-          await user.send("https://tenor.com/pcHIYYcnO2.gif");
-          await guild.members.ban(user, { reason: "User sent 'Moye'" });
+          await user.send(`u are banned bc you said "${rule.reason}"`);
+          await user.send("https://tenor.com/view/rickroll-gif-22999885");
+          await guild.members.ban(user, { reason: rule.reason });
           await message.reply(
             `User was banned bc of the reason '${rule.reason}'`
           );
